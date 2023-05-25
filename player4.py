@@ -296,8 +296,9 @@ class TTCPlayer:
         for i in myMissingPositions:
             #print(i)
             x, y = i
+            self.__updatePiecesOnBoard(board)
             for k in myMissingPieces:
-                if (board[x][y] == 0 and self.piecesOnBoard[k] == 0):
+                if (board[x][y] == 0 and self.piecesOnBoard[abs(k)] == 0):
                     board[x][y] = k
                     return board
 
@@ -316,7 +317,7 @@ class TTCPlayer:
         # If a new pawn is put on the board, we should reset its direction.
         if piece == 1:
             self.pawnDirection = -1
-
+        print("FUI el rndom cagao")
         return board
 
     def play(self, board):
@@ -324,46 +325,31 @@ class TTCPlayer:
         self.currentTurn += 1
         self.__updatePiecesOnBoard(board)
 
-        quienfue = 0
-
         #print("My pieces: ",self.piecesOnBoard)
         #print("Enemy pieces: ",self.enemyPiecesOnBoard)
         originalBoard = [row[:] for row in board]
-        newBoard = [row[:] for row in board]
-        quienfue = 0
-        failedAttempts = 0  # Counter for failed attempts
-        score = None
+
         for n in range(1000):
-            if self.currentTurn < 4 or sum(self.piecesOnBoard) < 4:
+            if self.currentTurn < 3 or sum(self.piecesOnBoard) < 4:
                 newBoard = self.__putRandomPiece(board)
-                quienfue = 2
-            #elif n > 500 and newBoard == None:  # All the pieces are on the board
-            #    newBoard = self.__moveRandomPiece(board)
-            #    quienfue = 3
-            else:
-                newBoard, score = self.__getBestMove(board, 1, self.piecesColor)
-                quienfue = 4
-
-            if failedAttempts >= 1 and score == None:  # Number of failed attempts threshold
+            elif n > 0:  # All the pieces are on the board
                 newBoard = self.__moveRandomPiece(board)  # Make a random move
-                quienfue = 5
-
-            if newBoard is not None and newBoard != originalBoard:
-                _, wasCapture = self.__wasPieceMovement(originalBoard, newBoard)
-                if wasCapture:
-                    if self.availableCaptures > 0:
-                        self.availableCaptures -= 1
-                    else:
-                        newBoard = [row[:] for row in originalBoard]
-                        quienfue = 6
-                        continue
-
-                if newBoard != originalBoard:
-                    break
             else:
-                failedAttempts += 1  # Increment failed attempt counter
+                newBoard, _ = self.__getBestMove(board, 1, self.piecesColor)
 
-        #print("FUE", quienfue)
+
+            _, wasCapture = self.__wasPieceMovement(originalBoard, newBoard)
+            if wasCapture:
+                if self.availableCaptures > 0:
+                    self.availableCaptures -= 1
+                # if it can not capturate anymore we copy the board as it was origanally
+                else:
+                    board = [row[:] for row in originalBoard]
+                    continue
+
+            if newBoard != originalBoard:
+                break
+
         self.__updatePawnDirection(newBoard)
         print("Time taken: ", time.time() - start)
 
@@ -415,35 +401,7 @@ class TTCPlayer:
         oppAlignedValue, oppAlignedPieces, oppMissingPieces, oppMissingPositions = self.__maxAlignedValue(
             board, -self.piecesColor)
         
-        #if myAlignedValue == oppAlignedValue:
-            #return self.countCenterPieces(board, self.piecesColor) - self.countCenterPieces(board, self.piecesColor)
-        #if(myAlignedValue > oppAlignedValue):
         return myAlignedValue - oppAlignedValue
-        #elif (myAlignedValue < oppAlignedValue):
-        #   return -10
-
-        #return 0
-        '''
-        score = 0
-        for row in board:
-            for cell in row:
-                score += cell
-
-        return score
-        '''
-
-    def getMissingPieces(self, board, pieceColor):
-        numbers = {1, 2, 3, 4} if pieceColor == 1 else {-1, -2, -3, -4}
-        present_numbers = set()
-
-        for row in board:
-            for num in row:
-                if num != 0:
-                    if (num > 0 and pieceColor == 1) or (num < 0 and pieceColor == -1):
-                        present_numbers.add(num)
-
-        missing_numbers = list(numbers - present_numbers)
-        return missing_numbers
 
     def __getBestMove(self, board, depth, isMaximizingPlayer):
         bestMove = None
@@ -573,20 +531,6 @@ class TTCPlayer:
             missing_positions = {(i, len(board)-1-i) for i in range(len(board)) if (board[i][len(board)-1-i] == 0 or board[i][len(board)-1-i] not in target_numbers)}
 
         return max_value, aligned_numbers, list(missing_numbers), missing_positions
-
-    def countCenterPieces(self, board, pieceColor):
-        center = [(1, 1), (1, 2), (2, 1), (2, 2)]  # Coordinates of the center square
-
-        count = 0  # Counter for the player's pieces
-
-        for x, y in center:
-            piece = board[x][y]
-            if pieceColor == 1 and piece in [1, 2, 3, 4]:
-                count += 1
-            elif pieceColor == -1 and piece in [-1, -2, -3, -4]:
-                count += 1
-
-        return count
 
     def reset(self):
         self.pawnDirection = -1
