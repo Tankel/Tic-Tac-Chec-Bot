@@ -296,9 +296,10 @@ class TTCPlayer:
         for i in myMissingPositions:
             #print(i)
             x, y = i
-            if (board[x][y] == 0 and self.piecesOnBoard[myMissingPieces[0]] == 0):
-                board[x][y] = myMissingPieces[0]
-                return board
+            for k in myMissingPieces:
+                if (board[x][y] == 0 and self.piecesOnBoard[k] == 0):
+                    board[x][y] = k
+                    return board
 
         while (piece == -1 or self.piecesOnBoard[piece] != 0):
             piece = random.randint(1, 4)
@@ -325,59 +326,49 @@ class TTCPlayer:
 
         quienfue = 0
 
-        print("My pieces: ",self.piecesOnBoard)
-        print("Enemy pieces: ",self.enemyPiecesOnBoard)
+        #print("My pieces: ",self.piecesOnBoard)
+        #print("Enemy pieces: ",self.enemyPiecesOnBoard)
         originalBoard = [row[:] for row in board]
-        #originalBoard = copy.deepcopy(board)
-        #newBoard = copy.deepcopy(board)
         newBoard = [row[:] for row in board]
         quienfue = 0
+        failedAttempts = 0  # Counter for failed attempts
+        score = None
         for n in range(1000):
-            #print(n)
-            if self.currentTurn < 4  or sum(self.piecesOnBoard) < 4:
+            if self.currentTurn < 4 or sum(self.piecesOnBoard) < 4:
                 newBoard = self.__putRandomPiece(board)
-                '''
-                    quienfue = 1
-                elif sum(self.piecesOnBoard) == 0:  # There are no pieces on the board
-                    newBoard = self.__putRandomPiece(board)
-                    quienfue = 2
-                elif n > 2 or newBoard == None:  # All the pieces are on the board
-                    newBoard = self.__moveRandomPiece(board)
-                    quienfue = 3
-                '''
                 quienfue = 2
-            elif n > 500 and newBoard == None:  # All the pieces are on the board
-                newBoard = self.__moveRandomPiece(board)
-                quienfue = 3
-
-            else: 
-                newBoard, _ = self.__getBestMove(board, 2, self.piecesColor)
-                #print(newBoard)
+            #elif n > 500 and newBoard == None:  # All the pieces are on the board
+            #    newBoard = self.__moveRandomPiece(board)
+            #    quienfue = 3
+            else:
+                newBoard, score = self.__getBestMove(board, 1, self.piecesColor)
                 quienfue = 4
-                
-            if newBoard != None and newBoard != originalBoard:
-                #print(newBoard)
+
+            if failedAttempts >= 1 and score == None:  # Number of failed attempts threshold
+                newBoard = self.__moveRandomPiece(board)  # Make a random move
+                quienfue = 5
+
+            if newBoard is not None and newBoard != originalBoard:
                 _, wasCapture = self.__wasPieceMovement(originalBoard, newBoard)
                 if wasCapture:
                     if self.availableCaptures > 0:
                         self.availableCaptures -= 1
                     else:
                         newBoard = [row[:] for row in originalBoard]
-                        #newBoard = copy.deepcopy(originalBoard)
+                        quienfue = 6
                         continue
 
                 if newBoard != originalBoard:
                     break
-            ##else: 
-                #newBoard = [row[:] for row in originalBoard]
-                #newBoard = copy.deepcopy(originalBoard)
-        #print(n, newBoard)
-        print("FUE", quienfue)
+            else:
+                failedAttempts += 1  # Increment failed attempt counter
+
+        #print("FUE", quienfue)
         self.__updatePawnDirection(newBoard)
         print("Time taken: ", time.time() - start)
 
-        for row in newBoard:
-            print(row)
+        #for row in newBoard:
+        #    print(row)
 
         return newBoard
 
@@ -457,19 +448,22 @@ class TTCPlayer:
     def __getBestMove(self, board, depth, isMaximizingPlayer):
         bestMove = None
         bestScore = float('-inf') if isMaximizingPlayer else float('inf')
+        hasChanges = False  # Flag to track changes
 
         if depth == 0 or self.__checkVictory(board, 1) or self.__checkVictory(board, -1):
             return board, self.__evaluateBoard(board)
 
         for i in range(len(board)):
             for j in range(len(board[0])):
+                localHasChanges = False  # Flag to track changes for each iteration
+
                 if board[i][j] == 0:
                     for pieceCode in range(1, 5):
                         if (self.piecesOnBoard[pieceCode] == 0 and isMaximizingPlayer and pieceCode in self.piecesCode) or (
                                 self.enemyPiecesOnBoard[pieceCode] == 0 and not isMaximizingPlayer and pieceCode not in self.piecesCode):
                             newBoard = [row[:] for row in board]
-                            newPiecesOnBoard = self.piecesOnBoard[:]
-                            newEnemyPiecesOnBoard = self.enemyPiecesOnBoard[:]
+                            newPiecesOnBoard = copy.deepcopy(self.piecesOnBoard)
+                            newEnemyPiecesOnBoard = copy.deepcopy(self.enemyPiecesOnBoard)
 
                             if isMaximizingPlayer:
                                 newBoard[i][j] = pieceCode
@@ -487,18 +481,20 @@ class TTCPlayer:
                                 if score > bestScore:
                                     bestScore = score
                                     bestMove = [row[:] for row in newBoard]
+                                    localHasChanges = True  # Changes occurred for this move
                             else:
                                 if score < bestScore:
                                     bestScore = score
                                     bestMove = [row[:] for row in newBoard]
+                                    localHasChanges = True  # Changes occurred for this move
 
                 elif (self.piecesOnBoard[board[i][j]] == 1 and isMaximizingPlayer and board[i][j] in self.piecesCode) or (
                         self.enemyPiecesOnBoard[board[i][j]] == 1 and not isMaximizingPlayer and board[i][j] not in self.piecesCode):
                     validMovements = self.__getValidMovements(board[i][j], (i, j), board)
                     for move in validMovements:
                         newBoard = [row[:] for row in board]
-                        newPiecesOnBoard = self.piecesOnBoard[:]
-                        newEnemyPiecesOnBoard = self.enemyPiecesOnBoard[:]
+                        newPiecesOnBoard = copy.deepcopy(self.piecesOnBoard)
+                        newEnemyPiecesOnBoard = copy.deepcopy(self.enemyPiecesOnBoard)
 
                         if isMaximizingPlayer:
                             newPiecesOnBoard[board[i][j]] = 0
@@ -514,18 +510,25 @@ class TTCPlayer:
                         else:
                             score = self.__evaluateBoard(newBoard)
 
-                        if isMaximizingPlayer:
-                            if score > bestScore:
-                                bestScore = score
-                                bestMove = [row[:] for row in newBoard]
-                        else:
-                            if score < bestScore:
-                                bestScore = score
-                                bestMove = [row[:] for row in newBoard]
+                        if(score is not None):
+                            if isMaximizingPlayer:
+                                if score > bestScore:
+                                    bestScore = score
+                                    bestMove = [row[:] for row in newBoard]
+                                    localHasChanges = True  # Changes occurred for this move
+                            else:
+                                if score < bestScore:
+                                    bestScore = score
+                                    bestMove = [row[:] for row in newBoard]
+                                    localHasChanges = True  # Changes occurred for this move
+
+                hasChanges |= localHasChanges  # Update the overall flag based on this iteration
+
+        # If no changes occurred, return an error value
+        if not hasChanges:
+            return None, None
 
         return bestMove, bestScore
-
-
 
     def __maxAlignedValue(self, board, number_sign):
         target_numbers = {1, 2, 3, 4} if number_sign == 1 else {-1, -2, -3, -4}
