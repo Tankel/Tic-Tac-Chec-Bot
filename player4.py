@@ -352,9 +352,8 @@ class TTCPlayer:
                 newBoard = self.__moveRandomPiece(board)
 
             else: 
-                newBoard, _ = self.__getBestMove(board, 4, self.piecesColor)
+                newBoard, _ = self.__getBestMove(board, 3, self.piecesColor)
                 #print(newBoard)
-                quienfue = 4
                 
             if newBoard != None and newBoard != originalBoard:
                 #print(newBoard)
@@ -487,11 +486,11 @@ class TTCPlayer:
                             if piecesColor == self.piecesColor:
                                 if score > bestScore:
                                     bestScore = score
-                                    bestMove = newBoard
+                                    bestMove = [row[:] for row in newBoard]
                             else:
                                 if score < bestScore:
                                     bestScore = score
-                                    bestMove = newBoard
+                                    bestMove = [row[:] for row in newBoard]
 
                 elif (self.piecesOnBoard[board[i][j]] == 1 and piecesColor == self.piecesColor) or (
                         self.enemyPiecesOnBoard[board[i][j]] == 1 and piecesColor == -self.piecesColor):
@@ -518,11 +517,11 @@ class TTCPlayer:
                         if piecesColor == self.piecesColor:
                             if score > bestScore:
                                 bestScore = score
-                                bestMove = newBoard
+                                bestMove = [row[:] for row in newBoard]
                         else:
                             if score < bestScore:
                                 bestScore = score
-                                bestMove = newBoard
+                                bestMove = [row[:] for row in newBoard]
 
         return bestMove, bestScore
 
