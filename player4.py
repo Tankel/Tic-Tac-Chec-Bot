@@ -458,7 +458,6 @@ class TTCPlayer:
     def __getBestMove(self, board, depth, piecesColor):
         bestMove = None
         bestScore = float('-inf') if piecesColor == self.piecesColor else float('inf')
-        score = 0
 
         if depth == 0 or self.__checkVictory(board, 1) or self.__checkVictory(board, -1):
             return board, self.__evaluateBoard(board)
@@ -466,17 +465,19 @@ class TTCPlayer:
         for i in range(len(board)):
             for j in range(len(board[0])):
                 if board[i][j] == 0:
-                    # Place a new piece on an empty cell
                     for pieceCode in range(1, 5):
                         if (self.piecesOnBoard[pieceCode] == 0 and piecesColor == self.piecesColor) or (
                                 self.enemyPiecesOnBoard[pieceCode] == 0 and piecesColor == -self.piecesColor):
                             newBoard = [row[:] for row in board]
+                            newPiecesOnBoard = self.piecesOnBoard[:]
+                            newEnemyPiecesOnBoard = self.enemyPiecesOnBoard[:]
+
                             if piecesColor == self.piecesColor:
                                 newBoard[i][j] = pieceCode * self.piecesColor
-                                self.piecesOnBoard[pieceCode] = 1
+                                newPiecesOnBoard[pieceCode] = 1
                             else:
                                 newBoard[i][j] = pieceCode * -self.piecesColor
-                                self.enemyPiecesOnBoard[pieceCode] = 1
+                                newEnemyPiecesOnBoard[pieceCode] = 1
 
                             if depth > 1:
                                 _, score = self.__getBestMove(newBoard, depth - 1, -piecesColor)
@@ -486,27 +487,25 @@ class TTCPlayer:
                             if piecesColor == self.piecesColor:
                                 if score > bestScore:
                                     bestScore = score
-                                    bestMove = [row[:] for row in newBoard]
-                                    self.piecesOnBoard[pieceCode] = 0
-                                    newBoard[i][j] = 0  # Undo the move
+                                    bestMove = newBoard
                             else:
                                 if score < bestScore:
                                     bestScore = score
-                                    bestMove = [row[:] for row in newBoard]
-                                    self.enemyPiecesOnBoard[pieceCode] = 0
-                                    newBoard[i][j] = 0  # Undo the move
+                                    bestMove = newBoard
 
                 elif (self.piecesOnBoard[board[i][j]] == 1 and piecesColor == self.piecesColor) or (
                         self.enemyPiecesOnBoard[board[i][j]] == 1 and piecesColor == -self.piecesColor):
-                    # Move an existing piece
                     validMovements = self.__getValidMovements(board[i][j], (i, j), board)
                     for move in validMovements:
-                        if piecesColor == self.piecesColor:
-                            self.piecesOnBoard[board[i][j]] = 0
-                        else:
-                            self.enemyPiecesOnBoard[board[i][j]] = 0
-
                         newBoard = [row[:] for row in board]
+                        newPiecesOnBoard = self.piecesOnBoard[:]
+                        newEnemyPiecesOnBoard = self.enemyPiecesOnBoard[:]
+
+                        if piecesColor == self.piecesColor:
+                            newPiecesOnBoard[board[i][j]] = 0
+                        else:
+                            newEnemyPiecesOnBoard[board[i][j]] = 0
+
                         newBoard[i][j] = 0
                         newRow, newCol = move
                         newBoard[newRow][newCol] = board[i][j]
@@ -519,17 +518,14 @@ class TTCPlayer:
                         if piecesColor == self.piecesColor:
                             if score > bestScore:
                                 bestScore = score
-                                bestMove = [row[:] for row in newBoard]
-                                self.piecesOnBoard[board[i][j]] = 1
-                                newBoard[i][j] = board[i][j]  # Undo the move
+                                bestMove = newBoard
                         else:
                             if score < bestScore:
                                 bestScore = score
-                                bestMove = [row[:] for row in newBoard]
-                                self.enemyPiecesOnBoard[board[i][j]] = 1
-                                newBoard[i][j] = board[i][j]  # Undo the move
+                                bestMove = newBoard
 
         return bestMove, bestScore
+
 
 
     def __maxAlignedValue(self, board, number_sign):
