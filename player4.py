@@ -270,6 +270,23 @@ class TTCPlayer:
         
         # piecesInBoard = list({1, 2, 3, 4} - set(piecesNotInBoard))
 
+
+        oppAlignedValue, oppAlignedPieces, oppMissingPieces, oppMissingPositions = self.__maxAlignedValue(
+            board, -self.piecesColor)
+
+        myAlignedValue, myAlignedPieces, myMissingPieces, myMissingPositions = self.__maxAlignedValue(
+            board, self.piecesColor)
+        
+        if oppAlignedValue == 3:
+            for i in oppMissingPositions:
+                #print(i)
+                x, y = i
+                self.__updatePiecesOnBoard(board)
+                for k in myMissingPieces:
+                    if (board[x][y] == 0 and self.piecesOnBoard[abs(k)] == 0):
+                        board[x][y] = k
+                        return board
+                    
         if self.currentTurn == 0:
             for i in range(4):
                 if(board[3][i]==0):
@@ -290,8 +307,6 @@ class TTCPlayer:
                 if(board[3][i]==0  and self.piecesOnBoard[4] == 0):
                     board[3][i] = self.piecesCode[4]
                     return board
-        myAlignedValue, myAlignedPieces, myMissingPieces, myMissingPositions = self.__maxAlignedValue(
-            board, self.piecesColor)
         
         for i in myMissingPositions:
             #print(i)
@@ -317,7 +332,6 @@ class TTCPlayer:
         # If a new pawn is put on the board, we should reset its direction.
         if piece == 1:
             self.pawnDirection = -1
-        print("FUI el rndom cagao")
         return board
 
     def play(self, board):
@@ -328,6 +342,35 @@ class TTCPlayer:
         #print("My pieces: ",self.piecesOnBoard)
         #print("Enemy pieces: ",self.enemyPiecesOnBoard)
         originalBoard = [row[:] for row in board]
+
+        # funcion para evitar que alinie las 4
+
+        oppAlignedValue, oppAlignedPieces, oppMissingPieces, oppMissingPositions = self.__maxAlignedValue(
+            board, -self.piecesColor)
+
+        myAlignedValue, myAlignedPieces, myMissingPieces, myMissingPositions = self.__maxAlignedValue(
+            board, self.piecesColor)
+        
+        if oppAlignedValue == 3 and myAlignedValue != 3:
+            for i in oppMissingPositions:
+                #print(i)
+                x, y = i
+                self.__updatePiecesOnBoard(board)
+                for k in myMissingPieces:
+                    if (board[x][y] == 0 and self.piecesOnBoard[abs(k)] == 0):
+                        board[x][y] = k
+                        return board
+            for i in range(len(board)):
+                for j in range(len(board[0])):
+                    if(board[i][j] in self.piecesCode and board[i][j]!=0):
+                        validMovements = self.__getValidMovements(board[i][j], (i, j), board)
+                        for oppCoor in oppMissingPositions:
+                            if oppCoor in validMovements:
+                                x, y = oppCoor
+                                board[x][y] = board[i][j]
+                                board[i][j] = 0
+                                return board
+
 
         for n in range(1000):
             if self.currentTurn < 3 or sum(self.piecesOnBoard) < 4:
