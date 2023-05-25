@@ -25,7 +25,7 @@ class TTCPlayer:
 
         self.piecesOnBoard = [0] * 5
         self.enemyPiecesOnBoard = [0] * 5
-        self.startTime = time.time()
+
 
     def setColor(self, piecesColor):
         self.piecesCode = [0, 1, 2, 3, 4]
@@ -300,24 +300,21 @@ class TTCPlayer:
                 board[x][y] = myMissingPieces[0]
                 return board
 
-        if self.currentTurn < 2 or time.time() - self.startTime < 2:
-            while (piece == -1 or self.piecesOnBoard[piece] != 0):
-                piece = random.randint(1, 4)
+        while (piece == -1 or self.piecesOnBoard[piece] != 0):
+            piece = random.randint(1, 4)
 
+        newRow = random.randint(0, 3)
+        newCol = random.randint(0, 3)
+
+        while (board[newRow][newCol] != 0):
             newRow = random.randint(0, 3)
             newCol = random.randint(0, 3)
 
-            while (board[newRow][newCol] != 0):
-                newRow = random.randint(0, 3)
-                newCol = random.randint(0, 3)
+        board[newRow][newCol] = piece * self.piecesColor
 
-            board[newRow][newCol] = piece * self.piecesColor
-
-            # If a new pawn is put on the board, we should reset its direction.
-            if piece == 1:
-                self.pawnDirection = -1
-
-            return board
+        # If a new pawn is put on the board, we should reset its direction.
+        if piece == 1:
+            self.pawnDirection = -1
 
         return board
 
@@ -334,10 +331,10 @@ class TTCPlayer:
         #originalBoard = copy.deepcopy(board)
         #newBoard = copy.deepcopy(board)
         newBoard = [row[:] for row in board]
-
+        quienfue = 0
         for n in range(1000):
             #print(n)
-            if self.currentTurn < 4  or sum(self.piecesOnBoard) == 0:
+            if self.currentTurn < 4  or sum(self.piecesOnBoard) < 4:
                 newBoard = self.__putRandomPiece(board)
                 '''
                     quienfue = 1
@@ -348,12 +345,15 @@ class TTCPlayer:
                     newBoard = self.__moveRandomPiece(board)
                     quienfue = 3
                 '''
+                quienfue = 2
             elif n > 500 and newBoard == None:  # All the pieces are on the board
                 newBoard = self.__moveRandomPiece(board)
+                quienfue = 3
 
             else: 
-                newBoard, _ = self.__getBestMove(board, 3, self.piecesColor)
+                newBoard, _ = self.__getBestMove(board, 2, self.piecesColor)
                 #print(newBoard)
+                quienfue = 4
                 
             if newBoard != None and newBoard != originalBoard:
                 #print(newBoard)
@@ -372,7 +372,7 @@ class TTCPlayer:
                 #newBoard = [row[:] for row in originalBoard]
                 #newBoard = copy.deepcopy(originalBoard)
         #print(n, newBoard)
-        #print("FUE", quienfue)
+        print("FUE", quienfue)
         self.__updatePawnDirection(newBoard)
         print("Time taken: ", time.time() - start)
 
@@ -454,9 +454,9 @@ class TTCPlayer:
         missing_numbers = list(numbers - present_numbers)
         return missing_numbers
 
-    def __getBestMove(self, board, depth, piecesColor):
+    def __getBestMove(self, board, depth, isMaximizingPlayer):
         bestMove = None
-        bestScore = float('-inf') if piecesColor == self.piecesColor else float('inf')
+        bestScore = float('-inf') if isMaximizingPlayer else float('inf')
 
         if depth == 0 or self.__checkVictory(board, 1) or self.__checkVictory(board, -1):
             return board, self.__evaluateBoard(board)
@@ -465,25 +465,25 @@ class TTCPlayer:
             for j in range(len(board[0])):
                 if board[i][j] == 0:
                     for pieceCode in range(1, 5):
-                        if (self.piecesOnBoard[pieceCode] == 0 and piecesColor == self.piecesColor) or (
-                                self.enemyPiecesOnBoard[pieceCode] == 0 and piecesColor == -self.piecesColor):
+                        if (self.piecesOnBoard[pieceCode] == 0 and isMaximizingPlayer and pieceCode in self.piecesCode) or (
+                                self.enemyPiecesOnBoard[pieceCode] == 0 and not isMaximizingPlayer and pieceCode not in self.piecesCode):
                             newBoard = [row[:] for row in board]
                             newPiecesOnBoard = self.piecesOnBoard[:]
                             newEnemyPiecesOnBoard = self.enemyPiecesOnBoard[:]
 
-                            if piecesColor == self.piecesColor:
-                                newBoard[i][j] = pieceCode * self.piecesColor
+                            if isMaximizingPlayer:
+                                newBoard[i][j] = pieceCode
                                 newPiecesOnBoard[pieceCode] = 1
                             else:
-                                newBoard[i][j] = pieceCode * -self.piecesColor
+                                newBoard[i][j] = -pieceCode
                                 newEnemyPiecesOnBoard[pieceCode] = 1
 
                             if depth > 1:
-                                _, score = self.__getBestMove(newBoard, depth - 1, -piecesColor)
+                                _, score = self.__getBestMove(newBoard, depth - 1, not isMaximizingPlayer)
                             else:
                                 score = self.__evaluateBoard(newBoard)
 
-                            if piecesColor == self.piecesColor:
+                            if isMaximizingPlayer:
                                 if score > bestScore:
                                     bestScore = score
                                     bestMove = [row[:] for row in newBoard]
@@ -492,15 +492,15 @@ class TTCPlayer:
                                     bestScore = score
                                     bestMove = [row[:] for row in newBoard]
 
-                elif (self.piecesOnBoard[board[i][j]] == 1 and piecesColor == self.piecesColor) or (
-                        self.enemyPiecesOnBoard[board[i][j]] == 1 and piecesColor == -self.piecesColor):
+                elif (self.piecesOnBoard[board[i][j]] == 1 and isMaximizingPlayer and board[i][j] in self.piecesCode) or (
+                        self.enemyPiecesOnBoard[board[i][j]] == 1 and not isMaximizingPlayer and board[i][j] not in self.piecesCode):
                     validMovements = self.__getValidMovements(board[i][j], (i, j), board)
                     for move in validMovements:
                         newBoard = [row[:] for row in board]
                         newPiecesOnBoard = self.piecesOnBoard[:]
                         newEnemyPiecesOnBoard = self.enemyPiecesOnBoard[:]
 
-                        if piecesColor == self.piecesColor:
+                        if isMaximizingPlayer:
                             newPiecesOnBoard[board[i][j]] = 0
                         else:
                             newEnemyPiecesOnBoard[board[i][j]] = 0
@@ -510,11 +510,11 @@ class TTCPlayer:
                         newBoard[newRow][newCol] = board[i][j]
 
                         if depth > 1:
-                            _, score = self.__getBestMove(newBoard, depth - 1, -piecesColor)
+                            _, score = self.__getBestMove(newBoard, depth - 1, not isMaximizingPlayer)
                         else:
                             score = self.__evaluateBoard(newBoard)
 
-                        if piecesColor == self.piecesColor:
+                        if isMaximizingPlayer:
                             if score > bestScore:
                                 bestScore = score
                                 bestMove = [row[:] for row in newBoard]
@@ -590,6 +590,5 @@ class TTCPlayer:
         self.piecesOnBoard = [0] * 5
         self.enemyPiecesOnBoard = [0] * 5
         self.currentTurn = -1
-        self.availableCaptures = 5
-        self.startTime = time.time()
+        self.availableCaptures = 7
 
