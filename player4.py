@@ -359,6 +359,8 @@ class TTCPlayer:
                 for k in myMissingPieces:
                     if (board[x][y] == 0 and self.piecesOnBoard[abs(k)] == 0):
                         board[x][y] = k
+                        self.__updatePawnDirection(board)
+                        print("Time taken: ", time.time() - start)
                         return board
             for i in range(len(board)):
                 for j in range(len(board[0])):
@@ -369,6 +371,8 @@ class TTCPlayer:
                                 x, y = oppCoor
                                 board[x][y] = board[i][j]
                                 board[i][j] = 0
+                                self.__updatePawnDirection(board)
+                                print("Time taken: ", time.time() - start)
                                 return board
 
 
