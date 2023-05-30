@@ -277,7 +277,7 @@ class TTCPlayer:
         myAlignedValue, myAlignedPieces, myMissingPieces, myMissingPositions = self.__maxAlignedValue(
             board, self.piecesColor)
         
-        if oppAlignedValue == 3:
+        if oppAlignedValue == 3 and myAlignedValue!=3:
             for i in oppMissingPositions:
                 #print(i)
                 x, y = i
@@ -286,7 +286,36 @@ class TTCPlayer:
                     if (board[x][y] == 0 and self.piecesOnBoard[abs(k)] == 0):
                         board[x][y] = k
                         return board
-                    
+        
+        if self.currentTurn == 0:
+            for i in range(4):
+                if(board[3][i]==0):
+                    board[3][i] = self.piecesCode[2]
+                    return board
+        elif self.currentTurn == 1 and self.piecesOnBoard[1] == 0:
+            for i in range(4):
+                if(board[3][i]==0):
+                    board[3][i] = self.piecesCode[1]
+                    return board
+        elif self.currentTurn == 2  and self.piecesOnBoard[4] == 0:
+            for i in range(4):
+                if(board[3][i]==0):
+                    board[3][i] = self.piecesCode[4]
+                    return board
+        elif self.currentTurn == 3:
+            for i in range(4):
+                if(board[3][i]==0  and self.piecesOnBoard[3] == 0):
+                    board[3][i] = self.piecesCode[3]
+                    return board
+            if self.piecesOnBoard[3] == 0:
+                for k in myMissingPositions:
+                    horseMoves = self.__getKnightValidMovements(k,board)
+                    for h in horseMoves:
+                        a, b = h
+                        if board[a][b]==0:
+                            board[a][b] = self.piecesCode[3]
+                            return board
+        '''
         if self.currentTurn == 0:
             for i in range(4):
                 if(board[3][i]==0):
@@ -307,7 +336,7 @@ class TTCPlayer:
                 if(board[3][i]==0  and self.piecesOnBoard[4] == 0):
                     board[3][i] = self.piecesCode[4]
                     return board
-        
+        '''
         for i in myMissingPositions:
             #print(i)
             x, y = i
@@ -375,14 +404,17 @@ class TTCPlayer:
                                 print("Time taken: ", time.time() - start)
                                 return board
 
-
+        quienSoy = 0
         for n in range(1000):
             if self.currentTurn < 3 or sum(self.piecesOnBoard) < 4:
                 newBoard = self.__putRandomPiece(board)
+                quienSoy = 1
             elif n > 0:  # All the pieces are on the board
                 newBoard = self.__moveRandomPiece(board)  # Make a random move
+                quienSoy = 2
             else:
                 newBoard, _ = self.__getBestMove(board, 1, self.piecesColor)
+                quienSoy = 3
 
 
             _, wasCapture = self.__wasPieceMovement(originalBoard, newBoard)
@@ -410,23 +442,23 @@ class TTCPlayer:
 
         # Check horizontally
         for row in board:
-            if set(row) - {0} == target_numbers:
+            if set(row) == target_numbers:
                 return True
 
         # Check vertically
         for col in range(len(board[0])):
             column_values = [board[row][col] for row in range(len(board))]
-            if set(column_values) - {0} == target_numbers:
+            if set(column_values) == target_numbers:
                 return True
 
         # Check diagonals
         diagonal_values = [board[i][i] for i in range(len(board))]
-        if set(diagonal_values) - {0} == target_numbers:
+        if set(diagonal_values) == target_numbers:
             return True
 
         reverse_diagonal_values = [
             board[i][len(board)-1-i] for i in range(len(board))]
-        if set(reverse_diagonal_values) - {0} == target_numbers:
+        if set(reverse_diagonal_values) == target_numbers:
             return True
 
         return False
@@ -584,5 +616,5 @@ class TTCPlayer:
         self.piecesOnBoard = [0] * 5
         self.enemyPiecesOnBoard = [0] * 5
         self.currentTurn = -1
-        self.availableCaptures = 7
+        self.availableCaptures = 5
 
