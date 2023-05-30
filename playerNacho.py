@@ -222,7 +222,6 @@ class TTCPlayer:
             return []
 
     def __moveRandomPiece(self, board):
-        # print(self.name, "::moveRandomPiece")
         piece = 0
 
         while (self.piecesOnBoard[piece] != 1):
@@ -261,15 +260,10 @@ class TTCPlayer:
                 if self.__sameSign(board[i][j], self.piecesColor):
                     self.piecesOnBoard[abs(board[i][j])] = 1
                 elif self.__sameSign(board[i][j], -self.piecesColor):
-                    #print(board[i][j], i, j)
                     self.enemyPiecesOnBoard[abs(board[i][j])] = 1
 
     def __putRandomPiece(self, board):
         piece = -1
-
-        
-        # piecesInBoard = list({1, 2, 3, 4} - set(piecesNotInBoard))
-
 
         oppAlignedValue, _, _, oppMissingPositions, oppAllignedPositions = self.__maxAlignedValue(
             board, -self.piecesColor)
@@ -277,18 +271,20 @@ class TTCPlayer:
         myAlignedValue, _, myMissingPieces, myMissingPositions, _ = self.__maxAlignedValue(
             board, self.piecesColor)
         
+        # Check the missing pieces in order 1,2,3,4 or -1,-2,-3,-4
+        # cause i think ist better to block with Knight that with Rook
         if self.__sameSign(myMissingPieces[0],1):
             myMissingPieces.sort()
         else:
             myMissingPieces.sort(reverse=True)
         
-
+        # block if the opponent is about to allign in the first moves
+        # not calling the blakcOpponent method because it eats pieces
         if oppAlignedValue == 3 and myAlignedValue!=3:
             for i in oppMissingPositions:
                 #print(i)
                 x, y = i
                 for k in myMissingPieces:
-                    print("KKKK", k)
                     if (board[x][y] == 0 and self.piecesOnBoard[abs(k)] == 0):
                         board[x][y] = k
                         self.__updatePiecesOnBoard(board)
@@ -306,7 +302,7 @@ class TTCPlayer:
                                     self.__updatePiecesOnBoard(board)
                                     return board
 
-        
+        # Trying to allign in the bottom in order 2,1,4,3 just because it worked better than others orders than i tried
         if self.currentTurn == 0:
             for i in range(4):
                 if(board[3][i]==0):
@@ -335,28 +331,7 @@ class TTCPlayer:
                         if board[a][b]==0:
                             board[a][b] = self.piecesCode[3]
                             return board
-        '''
-        if self.currentTurn == 0:
-            for i in range(4):
-                if(board[3][i]==0):
-                    board[3][i] = self.piecesCode[1]
-                    return board
-        elif self.currentTurn == 1 and self.piecesOnBoard[3] == 0:
-            for i in range(4):
-                if(board[3][i]==0):
-                    board[3][i] = self.piecesCode[3]
-                    return board
-        elif self.currentTurn == 2  and self.piecesOnBoard[2] == 0:
-            for i in range(4):
-                if(board[3][i]==0):
-                    board[3][i] = self.piecesCode[2]
-                    return board
-        elif self.currentTurn == 3:
-            for i in range(4):
-                if(board[3][i]==0  and self.piecesOnBoard[4] == 0):
-                    board[3][i] = self.piecesCode[4]
-                    return board
-        '''
+        # put in the line that i have the most
         for i in myMissingPositions:
             #print(i)
             x, y = i
@@ -366,6 +341,7 @@ class TTCPlayer:
                     self.__updatePiecesOnBoard(board)
                     return board
 
+        # if nothing else worked put it randomly
         while (piece == -1 or self.piecesOnBoard[piece] != 0):
             piece = random.randint(1, 4)
 
@@ -382,38 +358,29 @@ class TTCPlayer:
         if piece == 1:
             self.pawnDirection = -1
         return board
-
+    
     def __blockOpponent(self, board, myMissingPieces, oppMissingPositions, oppAlignedPositions):
-        
-        # to put my pieces not in board in the missign positions in the line of the opponent
+        # Place my pieces in the opponent's missing positions
         for i in oppMissingPositions:
-            #print(i)
             x, y = i
             for k in myMissingPieces:
-                if (board[x][y] == 0 and self.piecesOnBoard[abs(k)] == 0):
+                if board[x][y] == 0 and self.piecesOnBoard[abs(k)] == 0:
                     board[x][y] = k
                     self.__updatePawnDirection(board)
                     return board
-        # to move one of my pieces in the line of the opponet 
+        
+        # Move one of my pieces in the opponent's line
         for i in range(len(board)):
             for j in range(len(board[0])):
-                if(board[i][j] in self.piecesCode and board[i][j]!=0):
+                if board[i][j] in self.piecesCode and board[i][j] != 0:
                     validMovements = self.__getValidMovements(board[i][j], (i, j), board)
-                    for oppCoor in oppMissingPositions:
-                        if oppCoor in validMovements and oppCoor != (i,j):
+                    for oppCoor in oppMissingPositions.union(oppAlignedPositions):
+                        if oppCoor in validMovements and oppCoor != (i, j):
                             x, y = oppCoor
                             board[x][y] = board[i][j]
                             board[i][j] = 0
                             self.__updatePawnDirection(board)
                             return board
-                    for oppCoor in oppAlignedPositions:
-                        if oppCoor in validMovements and oppCoor != (i,j):
-                            x, y = oppCoor
-                            board[x][y] = board[i][j]
-                            board[i][j] = 0
-                            self.__updatePawnDirection(board)
-                            return board
-        
         
         return None
 
@@ -422,89 +389,87 @@ class TTCPlayer:
         self.currentTurn += 1
         self.__updatePiecesOnBoard(board)
 
-        #print("My pieces: ",self.piecesOnBoard)
-        #print("Enemy pieces: ",self.enemyPiecesOnBoard)
         originalBoard = [row[:] for row in board]
 
-        # funcion para evitar que alinee las 4
         oppAlignedValue, _, _, oppMissingPositions, oppAlignedPositions = self.__maxAlignedValue(
             board, -self.piecesColor)
 
         myAlignedValue, _, myMissingPieces, _, _ = self.__maxAlignedValue(
             board, self.piecesColor)
 
-        quienSoy = 0
         for n in range(1000):
-            newBoard = None
+            # put the first 4 pieces in semi-random order trying to allign
+            # when there are pieces not in board, put those in the line with most piece
             if self.currentTurn < 3 or sum(self.piecesOnBoard) < 4:
                 newBoard = self.__putRandomPiece(board)
-                quienSoy = 1
+            # when the opponent is about to allign and im not, block him or eat one of his pieces
             elif oppAlignedValue == 3 and myAlignedValue != 3 and self.availableCaptures > 0:
-                newBoard =  self.__blockOpponent(board, myMissingPieces, oppMissingPositions, oppAlignedPositions)
-                quienSoy = 5
-            if newBoard is None or n > 0:
-                if n > 0:  # All the pieces are on the board
-                    newBoard = self.__moveRandomPiece(board)  # Make a random move
-                    quienSoy = 2
+                newBoard = self.__blockOpponent(board, myMissingPieces, oppMissingPositions, oppAlignedPositions)
+            # ehrn all the pieces are in board
+            else:
+                if n > 0:  # If nothing else has workes make a random move
+                    newBoard = self.__moveRandomPiece(board)
+                # if its the first attempt calculate the bestMove with minimax
                 else:
                     newBoard, _ = self.__getBestMove(board, 1, self.piecesColor)
-                    quienSoy = 3
-
+            
+            # Check if the move was a capture
             _, wasCapture = self.__wasPieceMovement(originalBoard, newBoard)
             if wasCapture:
                 if self.availableCaptures > 0:
                     self.availableCaptures -= 1
-                # if it can not capturate anymore we copy the board as it was origanally
                 else:
                     board = [row[:] for row in originalBoard]
                     continue
-
+            # If it was a valid move break the loop
             if newBoard != originalBoard:
                 break
-
+        
         self.__updatePawnDirection(newBoard)
-        print("Time taken: ", time.time() - start)
-        print("Fue", quienSoy)
+        print("Time taken:", time.time() - start)
 
-        for row in newBoard:
-            print(row)
+        # To print thr board
+        #for row in newBoard:
+        #    print(row)
 
         return newBoard
+
 
     def __checkVictory(self, board, piecesColor):
         target_numbers = {1, 2, 3, 4} if piecesColor == 1 else {-1, -2, -3, -4}
 
         # Check horizontally
         for row in board:
-            if set(row) == target_numbers:
+            if all(piece in target_numbers for piece in row):
                 return True
 
         # Check vertically
         for col in range(len(board[0])):
             column_values = [board[row][col] for row in range(len(board))]
-            if set(column_values) == target_numbers:
+            if all(piece in target_numbers for piece in column_values):
                 return True
 
         # Check diagonals
         diagonal_values = [board[i][i] for i in range(len(board))]
-        if set(diagonal_values) == target_numbers:
+        if all(piece in target_numbers for piece in diagonal_values):
             return True
 
-        reverse_diagonal_values = [
-            board[i][len(board)-1-i] for i in range(len(board))]
-        if set(reverse_diagonal_values) == target_numbers:
+        reverse_diagonal_values = [board[i][len(board) - 1 - i] for i in range(len(board))]
+        if all(piece in target_numbers for piece in reverse_diagonal_values):
             return True
 
         return False
 
+
     def __evaluateBoard(self, board):
         # Evaluation function for the minimax algorithm
         # It gives a value to a given board state
-        # Positive values are good for the AI, negative for the opponent
-        # The closer the value to 16 or -16, the better the state for each player
+        # Positive values are good for my bot, negative for the opponent
 
+        # If i have won
         if self.__checkVictory(board, self.piecesColor):
             return 16 
+        # If the opponent have won
         elif self.__checkVictory(board, -self.piecesColor):
             return -16
 
@@ -514,6 +479,7 @@ class TTCPlayer:
         oppAlignedValue, _, _, _, _ = self.__maxAlignedValue(
             board, -self.piecesColor)
         
+        # Return who has more pieces allgined
         return myAlignedValue - oppAlignedValue
 
     def __getBestMove(self, board, depth, isMaximizingPlayer):
@@ -527,11 +493,12 @@ class TTCPlayer:
         for i in range(len(board)):
             for j in range(len(board[0])):
                 localHasChanges = False  # Flag to track changes for each iteration
-
+                # Check for empty cells putting the pieces not in board
                 if board[i][j] == 0:
                     for pieceCode in range(1, 5):
-                        if (self.piecesOnBoard[pieceCode] == 0 and isMaximizingPlayer and pieceCode in self.piecesCode) or (
-                                self.enemyPiecesOnBoard[pieceCode] == 0 and not isMaximizingPlayer and pieceCode not in self.piecesCode):
+                        piecesOnBoard = self.piecesOnBoard if isMaximizingPlayer else self.enemyPiecesOnBoard
+                        piecesCode = self.piecesCode if isMaximizingPlayer else []
+                        if piecesOnBoard[pieceCode] == 0 and pieceCode in piecesCode:
                             newBoard = [row[:] for row in board]
                             newPiecesOnBoard = copy.deepcopy(self.piecesOnBoard)
                             newEnemyPiecesOnBoard = copy.deepcopy(self.enemyPiecesOnBoard)
@@ -548,50 +515,38 @@ class TTCPlayer:
                             else:
                                 score = self.__evaluateBoard(newBoard)
 
+                            if (isMaximizingPlayer and score > bestScore) or (not isMaximizingPlayer and score < bestScore):
+                                bestScore = score
+                                bestMove = [row[:] for row in newBoard]
+                                localHasChanges = True  # Changes occurred for this move
+                # Check for my pieces all the movements
+                elif board[i][j] in self.piecesCode:
+                    piecesOnBoard = self.piecesOnBoard if isMaximizingPlayer else self.enemyPiecesOnBoard
+                    if piecesOnBoard[board[i][j]] == 1:
+                        validMovements = self.__getValidMovements(board[i][j], (i, j), board)
+                        for move in validMovements:
+                            newBoard = [row[:] for row in board]
+                            newPiecesOnBoard = copy.deepcopy(self.piecesOnBoard)
+                            newEnemyPiecesOnBoard = copy.deepcopy(self.enemyPiecesOnBoard)
+
                             if isMaximizingPlayer:
-                                if score > bestScore:
-                                    bestScore = score
-                                    bestMove = [row[:] for row in newBoard]
-                                    localHasChanges = True  # Changes occurred for this move
+                                newPiecesOnBoard[board[i][j]] = 0
                             else:
-                                if score < bestScore:
-                                    bestScore = score
-                                    bestMove = [row[:] for row in newBoard]
-                                    localHasChanges = True  # Changes occurred for this move
+                                newEnemyPiecesOnBoard[board[i][j]] = 0
 
-                elif (self.piecesOnBoard[board[i][j]] == 1 and isMaximizingPlayer and board[i][j] in self.piecesCode) or (
-                        self.enemyPiecesOnBoard[board[i][j]] == 1 and not isMaximizingPlayer and board[i][j] not in self.piecesCode):
-                    validMovements = self.__getValidMovements(board[i][j], (i, j), board)
-                    for move in validMovements:
-                        newBoard = [row[:] for row in board]
-                        newPiecesOnBoard = copy.deepcopy(self.piecesOnBoard)
-                        newEnemyPiecesOnBoard = copy.deepcopy(self.enemyPiecesOnBoard)
+                            newBoard[i][j] = 0
+                            newRow, newCol = move
+                            newBoard[newRow][newCol] = board[i][j]
 
-                        if isMaximizingPlayer:
-                            newPiecesOnBoard[board[i][j]] = 0
-                        else:
-                            newEnemyPiecesOnBoard[board[i][j]] = 0
-
-                        newBoard[i][j] = 0
-                        newRow, newCol = move
-                        newBoard[newRow][newCol] = board[i][j]
-
-                        if depth > 1:
-                            _, score = self.__getBestMove(newBoard, depth - 1, not isMaximizingPlayer)
-                        else:
-                            score = self.__evaluateBoard(newBoard)
-
-                        if(score is not None):
-                            if isMaximizingPlayer:
-                                if score > bestScore:
-                                    bestScore = score
-                                    bestMove = [row[:] for row in newBoard]
-                                    localHasChanges = True  # Changes occurred for this move
+                            if depth > 1:
+                                _, score = self.__getBestMove(newBoard, depth - 1, not isMaximizingPlayer)
                             else:
-                                if score < bestScore:
-                                    bestScore = score
-                                    bestMove = [row[:] for row in newBoard]
-                                    localHasChanges = True  # Changes occurred for this move
+                                score = self.__evaluateBoard(newBoard)
+
+                            if score is not None and ((isMaximizingPlayer and score > bestScore) or (not isMaximizingPlayer and score < bestScore)):
+                                bestScore = score
+                                bestMove = [row[:] for row in newBoard]
+                                localHasChanges = True  # Changes occurred for this move
 
                 hasChanges |= localHasChanges  # Update the overall flag based on this iteration
 
@@ -646,6 +601,11 @@ class TTCPlayer:
             missing_positions = {(i, len(board)-1-i) for i in range(len(board)) if (board[i][len(board)-1-i] == 0 or board[i][len(board)-1-i] not in target_numbers)}
             aligned_positions = {(i, len(board)-1-i) for i in range(len(board)) if board[i][len(board)-1-i] in aligned_numbers}
 
+        # max_value: number of max alligned pieces for the player
+        # aligned_numbers: pieceCode of the numbers that are aligned
+        # missing_numbers: pieceCode of the numbers that are NOT aligned
+        # aligned_positions:  coordenates of the missing_numbers
+        # missing_positions: coordenates of the aligned_numbers
         return max_value, aligned_numbers, list(missing_numbers), missing_positions, aligned_positions
 
 
@@ -655,4 +615,3 @@ class TTCPlayer:
         self.enemyPiecesOnBoard = [0] * 5
         self.currentTurn = -1
         self.availableCaptures = 5
-
