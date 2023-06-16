@@ -1,24 +1,22 @@
-# Project README
+# Tic-Tac-Chec Bot  -  "Nacho"
 
-## Project Name: "Nacho" - Final Report for BOT
+Authors: Luis Ángel Reyes Frausto ([@Tankel]), Samuel Iván Sánchez Salazar ([@SamuelSanchez03])
 
-Authors: Luis Ángel Reyes Frausto, Samuel Iván Sánchez Salazar (@SamuelSanchez03)
+## Introduction
+This repository contains the final project for the Data Structures and Algorithms III class. Our project, "Nacho," is a bot that plays Tic Tac Chec, a combination of Tic Tac Toe and Chess. To learn more about the game and its rules, you can watch this short video: [Tic Tac Chec Game Explanation](https://www.youtube.com/watch?v=P7U7cB-pf2c). The project specifications and template can be found in our teacher's repository: [Tic Tac Chec](https://github.com/manuel-rdz/tic-tac-chec).
 
-### Introduction
-Final Project for Data structures and algorithms III class, top 3 of the contest. Bot that plays Tic Tac Chec, a combination of Tic Tac Toc and Chess, here's a short video that explain the game: https://www.youtube.com/watch?v=P7U7cB-pf2c. The project specifications and the tempalte the project can be found on my teacher repository: [https://github.com/manuel-rdz/tic-tac-chec](https://github.com/manuel-rdz/tic-tac-chec) 
+For the development of this bot, we implemented the minimax algorithm, as it is well-suited for this type of game. The different implementations of the bot can be found in this repository, with the final version located in `playerNacho.py`.
 
-For the development of this bot, we decided to implement the minimax algorithm as it is ideal for this type of game. The different implementations of the bot can be found in this repository, where the final version is `playerNacho.py`.
-
-### Documentation
-The main class contains the following attributes, initialized and distributed in the `__init__` and `setColor` methods:
+## Documentation
+### Attributes
 - `name`: The name of the player.
-- `pawnDirection`: The movement direction of the pawn for the player (-1 for forward, 1 for backward).
+- `pawnDirection`: The movement direction of the player's pawn (-1 for forward, 1 for backward).
 - `currentTurn`: The current turn of the player.
 - `piecesOnBoard`: A list indicating which pieces of the player are on the board.
 - `enemyPiecesOnBoard`: A list indicating which pieces of the opponent are on the board.
 - `piecesCode`: A list containing the value codes of the player's pieces, where passing a piece index returns its actual color.
 
-##### Functions
+### Functions
 - `__init__(self, name)`: Initializes the class attributes.
 - `setColor(self, piecesColor)`: Sets the color of the player's pieces (-1 for black, 1 for white).
 - `__updatePawnDirection(self, board)`: Updates the player's pawn direction based on its position on the board.
@@ -37,7 +35,7 @@ The main class contains the following attributes, initialized and distributed in
   - In the first 4 turns, follows the previously described strategy for piece placement.
   - In subsequent turns, places a piece on the line that has the most pieces.
   - If none of the above conditions are met, places a piece randomly in an available position.
-- `__getBestMove(self, board, depth, isMaximizingPlayer)`: Implements the minimax algorithm to make the best move according to the heuristic function `__evaluateBoard`.
+- `__getBestMove(self, board, depth, isMaximizingPlayer)`: Implements the minimax algorithm to determine the best move according to the heuristic function `__evaluateBoard`.
 - `__blockOpponent(self, board, myMissingPieces, oppMissingPositions, oppAlignedPositions)`: Prevents the opponent from winning by placing one of our pieces in the opponent's missing cell or capturing their piece.
 - `__checkVictory(self, board, piecesColor)`: Checks if the given player has won.
 - `__evaluateBoard(self, board)`: Evaluates the board using the heuristic function, considering if either player has won and the maximum number of aligned pieces.
@@ -49,3 +47,5 @@ The main class contains the following attributes, initialized and distributed in
   - Coordinates of the already aligned pieces.
 - `play(self, board)`: The main method that represents the overall strategy of the bot. It takes the current board, the number of available captures, and the maximum number of allowed turns as input. The method returns the updated board after the bot has made its move.
 - `reset(self)`: Resets the necessary attributes to start another game.
+
+Feel free to explore the code and experiment with the bot. We hope you enjoy playing Tic Tac Chec with "Nacho"!
