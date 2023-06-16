@@ -1,6 +1,6 @@
 # Tic-Tac-Chec Bot  -  "Nacho"
 
-Authors: Luis Ángel Reyes Frausto ([@Tankel]), Samuel Iván Sánchez Salazar ([@SamuelSanchez03])
+Authors: Luis Ángel Reyes Frausto (@Tankel), Samuel Iván Sánchez Salazar (@SamuelSanchez03)
 
 ## Introduction
 This repository contains the final project for the Data Structures and Algorithms III class. Our project, "Nacho," is a bot that plays Tic Tac Chec, a combination of Tic Tac Toe and Chess. To learn more about the game and its rules, you can watch this short video: [Tic Tac Chec Game Explanation](https://www.youtube.com/watch?v=P7U7cB-pf2c). The project specifications and template can be found in our teacher's repository: [Tic Tac Chec](https://github.com/manuel-rdz/tic-tac-chec).
